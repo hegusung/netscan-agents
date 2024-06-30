@@ -13,8 +13,6 @@ HANDLE heap = NULL;
 
 void __chkstk(size_t s) {}
 
-extern "C" int _fltused = 0;
-
 void initialize_heap() {
     if (heap == NULL) {
         heap = HeapCreate(0, 0, 0);  // Default options, initial size, and maximum size
@@ -133,8 +131,6 @@ int memcmp(const void* ptr1, const void* ptr2, size_t num) {
 /*
 * String operations
 * - strcmp
-* - strlen
-* - strcpy
 */
 
 int strcmp(const char* str1, const char* str2) {
@@ -148,35 +144,6 @@ int strcmp(const char* str1, const char* str2) {
     }
 
     return *(unsigned char*)str1 - *(unsigned char*)str2;
-}
-
-size_t strlen(const char* str) {
-    const char* s = str;
-    while (*s) {
-        ++s;
-    }
-    return s - str;
-}
-
-char* strcpy(char* dest, const char* src) {
-    char* d = dest;
-    while ((*d++ = *src++) != '\0') {
-        // copying each character from src to dest
-    }
-    return dest;
-}
-
-
-char* strcat(char* first, const char* second) {
-    return strcpy(first + strlen(first), second);
-}
-
-size_t wcslen(const wchar_t* str) {
-    const wchar_t* s = str;
-    while (*s) {
-        ++s;
-    }
-    return s - str;
 }
 
 
@@ -494,11 +461,20 @@ void qsort(void* base, size_t num, size_t size, int (*cmp)(const void*, const vo
     }
 }
 
+void print(const char* message)
+{
+    HANDLE stdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (stdOut != NULL && stdOut != INVALID_HANDLE_VALUE)
+    {
+        DWORD written = 0;
+        WriteConsoleA(stdOut, message, strlen(message), &written, NULL);
+    }
+}
 
-int printf2(const char* format, ...) {
+void printf(const char* format, ...) {
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     if (hConsole == INVALID_HANDLE_VALUE) {
-        return NULL;
+        return;
     }
 
     // To improve... buffer overflow here
@@ -520,11 +496,6 @@ int printf2(const char* format, ...) {
             case 'x': {
                 int value = va_arg(args, int);
                 bufptr += wsprintfA(bufptr, "%x", value);
-                break;
-            }
-            case 'C': {
-                unsigned char value = va_arg(args, unsigned char);
-                bufptr += wsprintfA(bufptr, "%02x", value);
                 break;
             }
             case 's': {
@@ -557,60 +528,5 @@ int printf2(const char* format, ...) {
     DWORD written;
     WriteConsoleA(hConsole, buffer, (DWORD)(bufptr - buffer), &written, NULL);
 
-    /*
-    HANDLE write = CreateFileA(TEXT("debug3.txt"), FILE_APPEND_DATA, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    WriteFile(write, buffer, (DWORD)(bufptr - buffer), 0, 0);
-    CloseHandle(write);
-    */
-
     va_end(args);
-
-    return NULL;
-}
-
-// https://frankcheng.com/win32/double_string.htm
-void DoubleToCHAR(const double num, char* lpsz, DWORD dwSize)
-{
-    VARIANT vFrom, vTo;
-    vFrom.vt = VT_R8;
-    vFrom.dblVal = num;
-    VariantInit(&vTo);
-    VariantChangeType(&vTo, &vFrom, 0, VT_BSTR);
-    WideCharToMultiByte(CP_ACP, 0, vTo.bstrVal, -1, lpsz, dwSize, NULL, NULL);
-    SysFreeString(vTo.bstrVal);
-}
-
-// https://frankcheng.com/win32/double_string.htm
-void DoubleToWCHAR(const double num, wchar_t* lpsz, DWORD dwSize)
-{
-    VARIANT vFrom, vTo;
-    vFrom.vt = VT_R8;
-    vFrom.dblVal = num;
-    VariantInit(&vTo);
-    VariantChangeType(&vTo, &vFrom, 0, VT_BSTR);
-    lstrcpynW(lpsz, vTo.bstrVal, dwSize);
-    SysFreeString(vTo.bstrVal);
-}
-
-
-// CPP
-
-void* operator new(size_t size)
-{
-    return malloc(size);
-}
-
-void* operator new[](size_t size)
-{
-    return malloc(size);
-}
-
-void operator delete(void* p, size_t size)
-{
-    free(p);
-}
-
-void operator delete[](void* p, size_t size)
-{
-    free(p);
 }

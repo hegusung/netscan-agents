@@ -7,7 +7,7 @@ NamedPipe::NamedPipe(const char* pipe_name)
     strcpy(this->pipe_path, "\\\\.\\pipe\\");
     strcat(this->pipe_path, pipe_name);
 
-    printf("Pipe path: %s\n", this->pipe_path);
+    printf2("Pipe path: %s\n", this->pipe_path);
 
     this->security_attributes = { 0 };
     this->security_descriptor = { 0 };
@@ -63,14 +63,14 @@ int NamedPipe::close_named_pipe()
 
 int NamedPipe::com_loop()
 {
-    printf("Creating named pipe...\n");
+    printf2("Creating named pipe...\n");
 
     while ((this->create_named_pipe()) == 0)
     {
-        printf("Waiting for a client\n");
+        printf2("Waiting for a client\n");
         if (ConnectNamedPipe(this->pipe_handle, NULL) != FALSE)   // wait for someone to connect to the pipe
         {
-            printf("Client connected\n");
+            printf2("Client connected\n");
             // We are connected !
 
             BSONArray l1 = BSONArray();
@@ -85,7 +85,7 @@ int NamedPipe::com_loop()
             d1.set("list", new BSONObject(l1));
 
             BSONObject* d1_o = new BSONObject(d1);
-            printf("%s\n", d1_o->to_string().get());
+            printf2("%s\n", d1_o->to_string().get());
 
             string buffer = d1_o->create_structure();
 
@@ -94,17 +94,17 @@ int NamedPipe::com_loop()
 
             while (true)
             {
-                printf("loop !\n");
+                printf2("loop !\n");
                 DWORD bytes_to_read;
                 if ((PeekNamedPipe(this->pipe_handle, NULL, 0, NULL, &bytes_to_read, NULL)) == FALSE)
                 {
                     // pipe is broken
-                    printf("Pipe is broken\n");
+                    printf2("Pipe is broken\n");
                     this->close_named_pipe();
                     break;
                 }
 
-                printf("Bytes to read: %d\n", bytes_to_read);
+                printf2("Bytes to read: %d\n", bytes_to_read);
 
                 if (bytes_to_read == 0)
                 {

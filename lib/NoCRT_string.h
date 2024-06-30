@@ -1,4 +1,11 @@
 #pragma once
+
+/*
+* Helper functions to remove the visual Studio CRT
+* Project : https://github.com/hegusung/netscan-agents
+*/
+
+
 #ifndef __NOCRT_STRING_HEADER
 #define __NOCRT_STRING_HEADER
 
@@ -174,6 +181,11 @@ public:
     }
 
     const char* get() const
+    {
+        return str;
+    }
+
+    const char* c_str() const
     {
         return str;
     }

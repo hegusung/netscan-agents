@@ -7,13 +7,13 @@ Communication::Communication(void* communication_object)
     int res = this->com_object->initialize();
     if (res == 0)
     {
-        //printf("Starting workers\n");
+        //printf2("Starting workers\n");
         //worker.start_worker();
         res = this->com_object->com_loop();
-        printf("Communication loop ended: %d\n", res);
+        printf2("Communication loop ended: %d\n", res);
     }
     else
-        printf("Initialization error: %d\n", res);
+        printf2("Initialization error: %d\n", res);
 
 }
 

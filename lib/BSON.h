@@ -5,6 +5,21 @@
 #include "NoCRT.h"
 #include "NoCRT_string.h"
 #include "NoCRT_list.h"
+#include "NoCRT_map.h"
+#include "obfuscation.h"
+
+//#define BSON_HASH_SEED     0x47362036
+// MurmurOAAT_32
+//unsigned int bson_string_hash(const char* str, unsigned int h);
+
+class BSONObject;
+typedef list<BSONObject*> BSONArray;
+typedef map<string, BSONObject*> BSONDict;
+
+
+BSONObject* get_byhash(BSONDict dict, unsigned int string_hash);
+bool exists_byhash(BSONDict dict, unsigned int string_hash);
+
 
 #define BSONType_null 1
 #define BSONType_boolean 2
@@ -16,39 +31,39 @@
 /*
 Code exemple:
 
-    BSONArray l1 = BSONArray();
+BSONArray l1 = BSONArray();
 	l1.insert(new BSONObject(false));
 	l1.insert(new BSONObject(42));
 	l1.insert(new BSONObject(string("test")));
 
 	BSONDict d1 = BSONDict();
-	d1.set("test1", new BSONObject(false));
-	d1.set("test2", new BSONObject(42));
-	d1.set("test3", new BSONObject(string("test")));
-	d1.set("list", new BSONObject(l1));
+	d1["test1"] = new BSONObject(false);
+	d1["test2"] = new BSONObject(42);
+	d1["test3"] = new BSONObject(string("test"));
+	d1["list"] = new BSONObject(l1);
 
 	BSONObject* d1_o = new BSONObject(d1);
-	printf("%s\n", d1_o->to_string().get());
+	printf2("%s\n", d1_o->to_string().get());
 
 	string buffer = d1_o->create_structure();
-	printf("Buffer size: %d\n", buffer.length());
+	printf2("Buffer size: %d\n", buffer.length());
 
 	pretty_print(buffer.get(), buffer.length());
-	printf("\n\n");
+	printf2("\n\n");
 
-	printf("======================\n");
+	printf2("======================\n");
 	BSONObject* parsed = new BSONObject();
 	parsed->parse(buffer.get());
 
-	printf("%s\n", parsed->to_string().get());
+	printf2("%s\n", parsed->to_string().get());
 
 	string buffer2 = parsed->create_structure();
-	printf("Buffer size: %d\n", buffer2.length());
+	printf2("Buffer size: %d\n", buffer2.length());
 
 	pretty_print(buffer2.get(), buffer2.length());
-	printf("\n\n");
+	printf2("\n\n");
 
-	printf("d1\n");
+	printf2("d1\n");
 	delete d1_o;
 
 */
@@ -71,9 +86,7 @@ Code exemple:
 *   \x00
 */
 
-class BSONObject;
-typedef list<BSONObject*> BSONArray;
-class BSONDict;
+
 
 class BSONObject
 {
@@ -81,6 +94,7 @@ public:
 	BSONObject();
 	BSONObject(bool boolean);
 	BSONObject(int integer);
+	BSONObject(const char* str);
 	BSONObject(const string &str);
 	BSONObject(const BSONArray &array);
 	BSONObject(const BSONDict &dict);
@@ -100,6 +114,7 @@ public:
 	bool IsString();
 	bool IsArray();
 	bool IsDict();
+	unsigned int getType();
 
 	bool AsBoolean();
 	int AsInteger();
@@ -116,44 +131,7 @@ private:
 	BSONDict *dict_value = NULL;
 };
 
-class BSONKey
-{
-public:
-	BSONKey(string k, BSONObject& o)
-	{
-		key = k;
-		value = new BSONObject(o);
-	}
-	BSONKey(string k, BSONObject* o)
-	{
-		key = k;
-		value = o;
-	}
-	~BSONKey()
-	{
-		delete value;
-	}
-	string key;
-	BSONObject* value;
-};
-
-class BSONDict
-{
-public:
-	BSONDict();
-	BSONDict(const BSONDict& dict);
-	~BSONDict();
-
-	bool exists(string key);
-	bool set(string key, BSONObject &object);
-	bool set(string key, BSONObject* object);
-	bool remove(string key);
-	list<BSONKey*> keys;
-
-};
-
 string uint32_to_string(unsigned int integer);
 unsigned int buffer_to_uint32(const char* buffer);
-void pretty_print(const char* buffer, size_t size);
 
 #endif

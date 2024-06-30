@@ -12,7 +12,7 @@ Worker::Worker()
 
 void Worker::process_buffer(string buffer)
 {
-    printf("Processing incomming data: size: %d\n", buffer.length());
+    printf2("Processing incomming data: size: %d\n", buffer.length());
 
     // TODO checksum
 
@@ -20,7 +20,7 @@ void Worker::process_buffer(string buffer)
     BSONObject* parsed = new BSONObject();
     parsed->parse(buffer.get());
 
-    printf("%s\n", parsed->to_string().get());
+    printf2("%s\n", parsed->to_string().get());
 }
 
 void Worker::start_worker()

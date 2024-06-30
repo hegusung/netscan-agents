@@ -1,5 +1,33 @@
 #include "BSON.h"
 
+#include "obfuscation.h"
+
+BSONObject* get_byhash(BSONDict dict, unsigned int str_hash)
+{
+	BSONDict::iterator l_iterFirst = dict.begin();
+	for (; (l_iterFirst != dict.end()); l_iterFirst++)
+	{
+		unsigned int key_hash = STRING_HASH((*l_iterFirst).first.c_str()); // bson_string_hash((*l_iterFirst).first.c_str(), BSON_HASH_SEED);
+		if (key_hash == str_hash)
+			return (*l_iterFirst).second;
+	}
+}
+
+bool exists_byhash(BSONDict dict, unsigned int str_hash)
+{
+	BSONDict::iterator l_iterFirst = dict.begin();
+	for (; (l_iterFirst != dict.end()); l_iterFirst++)
+	{
+		const char* str = (*l_iterFirst).first.c_str();
+		unsigned int key_hash = STRING_HASH((*l_iterFirst).first.c_str());  //bson_string_hash((*l_iterFirst).first.c_str(), BSON_HASH_SEED);
+		if (key_hash == str_hash)
+			return true;
+	}
+
+	return false;
+}
+
+
 
 BSONObject::BSONObject()
 {
@@ -18,6 +46,12 @@ BSONObject::BSONObject(int integer)
 	this->integer_value = integer;
 }
 
+BSONObject::BSONObject(const char* str)
+{
+	this->type = BSONType_string;
+	this->string_value = new string(string(str));
+}
+
 BSONObject::BSONObject(const string &str)
 {
 	this->type = BSONType_string;
@@ -27,7 +61,7 @@ BSONObject::BSONObject(const string &str)
 BSONObject::BSONObject(const BSONArray &array)
 {
 	this->type = BSONType_array;
-	this->array_value = new BSONArray(array);
+	this->array_value = new BSONArray(array);	
 }
 
 BSONObject::BSONObject(const BSONDict &dict)
@@ -161,12 +195,12 @@ string BSONObject::create_structure()
 
 		out = string(data, size);
 
-		for (list<BSONKey*>::iterator it = dict_value->keys.begin(); it != dict_value->keys.end(); ++it) {
+		for (BSONDict::iterator it = dict_value->begin(); it != dict_value->end(); ++it) {
 
-			out += (*it)->key;
+			out += (*it).first;
 			out += string('\0');
 
-			out += (*it)->value->create_structure();
+			out += (*it).second->create_structure();
 		}
 
 		out += string('\0');
@@ -251,7 +285,7 @@ size_t BSONObject::parse(const char* buffer)
 			BSONObject* obj = new BSONObject();
 			offset += obj->parse(buffer + offset);
 
-			this->dict_value->set(key, obj);
+			this->dict_value->insert(key, obj);
 		}
 
 		offset += 1;
@@ -334,11 +368,11 @@ string BSONObject::to_string()
 	else if (this->type == BSONType_dict)
 	{
 		string out = "dict -> {";
-		for (list<BSONKey*>::iterator it = dict_value->keys.begin(); it != dict_value->keys.end(); ++it) {
+		for (BSONDict::iterator it = dict_value->begin(); it != dict_value->end(); ++it) {
 			out += "\"";
-			out += (*it)->key;
+			out += (*it).first;
 			out += "\": ";
-			out += (*it)->value->to_string();
+			out += (*it).second->to_string();
 			out += ", ";
 		}
 
@@ -377,6 +411,11 @@ bool BSONObject::IsDict()
 	return this->type == BSONType_dict;
 }
 
+unsigned int BSONObject::getType()
+{
+	return this->type;
+}
+
 bool BSONObject::AsBoolean()
 {
 	return bool_value;
@@ -402,76 +441,6 @@ const BSONDict& BSONObject::AsDict()
 	return (*dict_value);
 }
 
-BSONDict::BSONDict()
-{}
-
-BSONDict::BSONDict(const BSONDict& dict)
-{
-	list<BSONKey*> old = dict.keys;
-
-	for (list<BSONKey*>::iterator it = old.begin(); it != old.end(); ++it) {
-		keys.insert(
-			new BSONKey(
-				(*it)->key, 
-				*(*it)->value
-			)
-		);
-	}
-}
-
-BSONDict::~BSONDict()
-{
-	for (list<BSONKey*>::iterator it = keys.begin(); it != keys.end(); ++it) {
-		delete *it;
-	}
-}
-
-bool BSONDict::exists(string key)
-{
-	for (list<BSONKey*>::iterator it = keys.begin(); it != keys.end(); ++it) {
-		if ((*it)->key == key) return true;
-	}
-
-	return false;
-}
-
-bool BSONDict::set(string key, BSONObject& object)
-{
-	if(this->exists(key))
-		return false;
-
-	keys.insert(new BSONKey(key, object));
-
-	return true;
-}
-
-bool BSONDict::set(string key, BSONObject* object)
-{
-	if (this->exists(key))
-		return false;
-
-	keys.insert(new BSONKey(key, object));
-
-	return true;
-}
-
-bool BSONDict::remove(string key)
-{
-	if (!this->exists(key))
-		return false;
-
-	int index = 0;
-	for (list<BSONKey*>::iterator it = keys.begin(); it != keys.end(); ++it) {
-		if ((*it)->key == key)
-			break;
-		
-		index++;
-	}
-
-	keys.clear(index);
-
-	return true;
-}
 
 string uint32_to_string(unsigned int integer)
 {
@@ -495,16 +464,4 @@ unsigned int buffer_to_uint32(const char* buffer)
 	out += buffer[3] << 24;
 
 	return out;
-}
-
-void pretty_print(const char* buffer, size_t size)
-{
-	for (int i = 0; i < size; i++)
-	{
-		if ((i % 8) == 0)
-		{
-			printf("\n");
-		}
-		printf("%C ", buffer[i]);
-	}
 }

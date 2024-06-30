@@ -1,4 +1,10 @@
 #pragma once
+
+/*
+* Helper functions to remove the visual Studio CRT
+* Project : https://github.com/hegusung/netscan-agents
+*/
+
 #ifndef __NOCRT_LIST_HEADER
 #define __NOCRT_LIST_HEADER
 
@@ -168,12 +174,28 @@ public:
 		return Iterator<T>(m_last);
 	}
 
+	T& operator[](size_t i)
+	{
+		Node<T>* buf = m_first->m_next;
+		for (int j = i; j > 0; j--)
+		{
+			buf = buf->m_next;
+		}
+
+		return buf->m_node;
+	}
+
 	list<T>& operator=(const list<T>& p_list)
 	{
 		if (this != &p_list)
 		{
+			//(this)->clear();
+
 			(this)->~list<T>();
-			new (this) list<T>(p_list);
+			//new (this) list<T>(p_list);
+			this->list<T>::list<T>(p_list);
+			//list<T> l = list<T>(p_list);
+
 			return *this;
 		}
 		else
@@ -206,6 +228,10 @@ public:
 		to_add->m_prev = buf->m_prev;
 		buf->m_prev = to_add;
 		m_count++;
+	}
+	void push_back(T p_node)
+	{
+		this->insert(p_node);
 	}
 	int clear(int p_num)
 	{

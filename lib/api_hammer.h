@@ -3,6 +3,8 @@
 #define API_HAMMER_HEADER
 
 /*
+* File with functions which can be used for API hammer purposes
+* Project : https://github.com/hegusung/netscan-agents
 * 
 */
 

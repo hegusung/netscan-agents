@@ -21,20 +21,28 @@
  *
  * Portions created by Joachim Bauch are Copyright (C) 2004-2015
  * Joachim Bauch. All Rights Reserved.
+ * 
+ * Modified version in the project : https://github.com/hegusung/netscan-agents
+ * Modifications:
+ *  - Dynamic usage of Windows API
+ *  - Custom GetProcAddres / GetModuleHandle
  *
  */
 
 #ifndef __MEMORY_MODULE_HEADER
 #define __MEMORY_MODULE_HEADER
 
-//#include "NoCRT.h"
+#include "NoCRT.h"
 
 #include <windows.h>
 #include "../lib/load_dll.h"
+#include "../lib/obfuscation.h"
 
+/*
 #ifdef __cplusplus
 extern "C" {
 #endif
+*/
 
 /*
 * Obfuscation:
@@ -185,8 +193,10 @@ FARPROC MemoryDefaultGetProcAddress(HCUSTOMMODULE, LPCSTR, void *);
  */
 void MemoryDefaultFreeLibrary(HCUSTOMMODULE, void *);
 
+/*
 #ifdef __cplusplus
 }
 #endif
+*/
 
 #endif  // __MEMORY_MODULE_HEADER

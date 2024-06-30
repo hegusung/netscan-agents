@@ -1,4 +1,10 @@
 #pragma once
+
+/*
+* Helper functions to remove the visual Studio CRT
+* Project : https://github.com/hegusung/netscan-agents
+*/
+
 #ifndef MUTEX_H_INCLUDED
 #define MUTEX_H_INCLUDED
 

@@ -13,7 +13,7 @@ void temp_file_creation()
         dwNumberOfBytesWritten = NULL;
 
     PUCHAR   pRandBuffer = NULL;
-    SIZE_T  sBufferSize;
+    SIZE_T  sBufferSize = 0;
 
     // Generate the random number
     NTSTATUS status = BCryptGenRandom(

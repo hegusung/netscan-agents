@@ -79,16 +79,21 @@ fnIsBadReadPtr pIsBadReadPtr;
 
 BOOL init_memorymodule()
 {
+    CTIME_STRING_HASH(KERNEL32, "KERNEL32.DLL");
     HMODULE kernel32 = GetModuleHandle_byhash(KERNEL32_hash);
     if (kernel32 == NULL)
         return FALSE;
 
+    CTIME_API_HASH(VirtualAlloc);
     pVirtualAlloc = (fnVirtualAlloc)GetProcAddress_byhash(kernel32, VirtualAlloc_hash);
+    //pVirtualAlloc = VirtualAlloc;
     if (pVirtualAlloc == NULL)
         return FALSE;
+    CTIME_API_HASH(VirtualProtect);
     pVirtualProtect = (fnVirtualProtect)GetProcAddress_byhash(kernel32, VirtualProtect_hash);
     if (pVirtualProtect == NULL)
         return FALSE;
+    CTIME_API_HASH(VirtualFree);
     pVirtualFree = (fnVirtualFree)GetProcAddress_byhash(kernel32, VirtualFree_hash);
     if (pVirtualFree == NULL)
         return FALSE;
@@ -100,27 +105,35 @@ BOOL init_memorymodule()
     if (pGetProcAddress == NULL)
         return FALSE;
     */
+    CTIME_API_HASH(FreeLibrary);
     pFreeLibrary = (fnFreeLibrary)GetProcAddress_byhash(kernel32, FreeLibrary_hash);
     if (pFreeLibrary == NULL)
         return FALSE;
+    CTIME_API_HASH(GetNativeSystemInfo);
     pGetNativeSystemInfo = (fnGetNativeSystemInfo)GetProcAddress_byhash(kernel32, GetNativeSystemInfo_hash); 
     if (pGetNativeSystemInfo == NULL)
         return FALSE;
+    CTIME_API_HASH(HeapAlloc);
     pHeapAlloc = (fnHeapAlloc)GetProcAddress_byhash(kernel32, HeapAlloc_hash);
     if (pHeapAlloc == NULL)
         return FALSE;
+    CTIME_API_HASH(GetProcessHeap);
     pGetProcessHeap = (fnGetProcessHeap)GetProcAddress_byhash(kernel32, GetProcessHeap_hash);
     if (pGetProcessHeap == NULL)
         return FALSE;
+    CTIME_API_HASH(HeapFree);
     pHeapFree = (fnHeapFree)GetProcAddress_byhash(kernel32, HeapFree_hash);
     if (pHeapFree == NULL)
         return FALSE;
+    CTIME_API_HASH(GetThreadLocale);
     pGetThreadLocale = (fnGetThreadLocale)GetProcAddress_byhash(kernel32, GetThreadLocale_hash);
     if (pGetThreadLocale == NULL)
         return FALSE;
+    CTIME_API_HASH(lstrlenA);
     plstrlenA = (fnlstrlenA)GetProcAddress_byhash(kernel32, lstrlenA_hash);
     if (plstrlenA == NULL)
         return FALSE;
+    CTIME_API_HASH(IsBadReadPtr);
     pIsBadReadPtr = (fnIsBadReadPtr)GetProcAddress_byhash(kernel32, IsBadReadPtr_hash);
     if (pIsBadReadPtr == NULL)
         return FALSE;
@@ -604,6 +617,7 @@ HCUSTOMMODULE MemoryDefaultLoadLibrary(LPCSTR filename, void *userdata)
     UNREFERENCED_PARAMETER(userdata);
 #ifdef DYNAMIC_LOADING
     result = LoadLibraryA_byname(filename);
+    //result = LoadLibraryA(filename);
 #else
     result = LoadLibraryA(filename);
 #endif
@@ -618,7 +632,7 @@ FARPROC MemoryDefaultGetProcAddress(HCUSTOMMODULE module, LPCSTR name, void *use
 {
     UNREFERENCED_PARAMETER(userdata);
 #ifdef DYNAMIC_LOADING
-    return (FARPROC) GetProcAddress_byname((HMODULE) module, name);
+    return (FARPROC)GetProcAddress_byname((HMODULE)module, name);
 #else
     return (FARPROC)GetProcAddress((HMODULE)module, name);
 #endif

@@ -1,5 +1,12 @@
 #pragma once
 
+/*
+* Simple C++ HTTP GET/POST project with the following capabilities:
+* - Dynamic loading of wininet API
+* - Custom GetProcAddress / GetModuleHandle
+* Project : https://github.com/hegusung/netscan-agents
+*/
+
 #ifndef HTTP_HEADER
 #define HTTP_HEADER
 
@@ -9,6 +16,8 @@
 
 #include "../lib/NoCRT.h"
 #include "../lib/load_dll.h"
+
+
 
 typedef HMODULE (WINAPI * fnLoadLibraryA)(LPCSTR lpLibFileName);
 
@@ -48,12 +57,5 @@ private:
 	fnHttpOpenRequestA pHttpOpenRequestA = NULL;
 	fnHttpSendRequestA pHttpSendRequestA = NULL;
 };
-
-/*
-bool init_wininet();
-int get_bin(const char* ip, int port, const char* path, char** output, size_t* output_size);
-int post_result(const char* ip, int port, const char* path, const char* data, size_t data_size, char** output, size_t* output_size);
-int get_response_content(HINTERNET hRequest, char** output, size_t* output_size);
-*/
 
 #endif

@@ -1,7 +1,14 @@
+
+/*
+* Helper functions to remove the visual Studio CRT
+* Project : https://github.com/hegusung/netscan-agents
+*/
+
 #ifndef __NOCRT_HEADER
 #define __NOCRT_HEADER
 
 #include <Windows.h>
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,6 +59,9 @@ char* strcpy(char* dest, const char* src);
 #pragma intrinsic(strcat)
 #pragma function(strcat)
 char* strcat(char* dest, const char* src);
+#pragma intrinsic(wcslen)
+#pragma function(wcslen)
+size_t wcslen(const wchar_t* str);
 
 
 /*
@@ -79,7 +89,8 @@ void* bsearch(const void* key, const void* base, size_t num, size_t size, int (*
 void qsort(void* base, size_t num, size_t size, int (*cmp)(const void*, const void*));
 int printf2(const char* format, ...);
 
-
+void DoubleToCHAR(const double num, char* lpsz, DWORD dwSize);
+void DoubleToWCHAR(const double num, wchar_t* lpsz, DWORD dwSize);
 
 #ifdef __cplusplus
 }
