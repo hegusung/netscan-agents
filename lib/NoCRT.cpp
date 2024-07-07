@@ -17,20 +17,24 @@ extern "C" int _fltused = 0;
 
 void initialize_heap() {
     if (heap == NULL) {
-        heap = HeapCreate(0, 0, 0);  // Default options, initial size, and maximum size
+        //heap = HeapCreate(0, 0, 0);  // Default options, initial size, and maximum size
+        heap = GetProcessHeap();
     }
 }
 
 void* malloc(size_t size) {
+
     initialize_heap();
 
     if (size == 0) {
         return NULL;
     }
 
-    void* ptr = HeapAlloc(heap, 0, size);
+    void* ptr = HeapAlloc(heap, HEAP_ZERO_MEMORY, size);
+
     if (ptr == NULL) {
         // Allocation failed
+
         return NULL;
     }
 
@@ -60,6 +64,7 @@ void* realloc(void* ptr, size_t size) {
 }
 
 void free(void* ptr) {
+
     if (ptr == NULL) {
         return;
     }
@@ -148,6 +153,19 @@ int strcmp(const char* str1, const char* str2) {
     }
 
     return *(unsigned char*)str1 - *(unsigned char*)str2;
+}
+
+int wcscmp(const wchar_t* str1, const wchar_t* str2) {
+    if (str1 == NULL || str2 == NULL) {
+        return -1; // Or another error code, depending on your error handling preference
+    }
+
+    while (*str1 && (*str1 == *str2)) {
+        str1++;
+        str2++;
+    }
+
+    return *(wchar_t*)str1 - *(wchar_t*)str2;
 }
 
 size_t strlen(const char* str) {
@@ -418,33 +436,25 @@ long strtol(const char* str, char** endptr, int base) {
 */
 
 
-void* bsearch(const void* key, const void* base, size_t num, size_t size, int (*cmp)(const void*, const void*)) {
-    if (key == NULL || base == NULL || num == 0 || size == 0 || cmp == NULL) {
-        return NULL;
+void* bsearch(const void* key, const void* base0,
+    size_t nmemb, size_t size,
+    int (*compar)(const void*, const void*))
+{
+    const char* base = (const char*)base0;
+    int lim, cmp;
+    const void* p;
+
+    for (lim = nmemb; lim != 0; lim >>= 1) {
+        p = base + (lim >> 1) * size;
+        cmp = (*compar)(key, p);
+        if (cmp == 0)
+            return (void*)p;
+        if (cmp > 0) {	/* key > p: move right */
+            base = (const char*)p + size;
+            lim--;
+        } /* else move left */
     }
-
-    const char* baseChar = (const char*)base;
-
-    size_t left = 0;
-    size_t right = num - 1;
-
-    while (left <= right) {
-        size_t mid = left + (right - left) / 2;
-        const void* midElement = baseChar + mid * size;
-        int comparison = cmp(key, midElement);
-
-        if (comparison == 0) {
-            return (void*)midElement; // Element found
-        }
-        else if (comparison < 0) {
-            right = mid - 1; // Search in the left half
-        }
-        else {
-            left = mid + 1; // Search in the right half
-        }
-    }
-
-    return NULL; // Element not found
+    return (NULL);
 }
 
 // Swaps two elements of size 'size'
@@ -568,6 +578,31 @@ int printf2(const char* format, ...) {
     return NULL;
 }
 
+// Custom vsnprintf implementation using wsprintfA
+int vsnprintf(char* buffer, size_t count, const char* format, va_list argptr) {
+
+    // Allocate a temporary buffer that we will format into
+    char temp[4096];
+    int result = wvsprintfA(temp, format, argptr);
+
+    // Copy the formatted string to the provided buffer with truncation if necessary
+    if (buffer != NULL)
+    {
+        if (count > result)
+        {
+            strcpy(buffer, temp);
+            buffer[result] = '\0';
+        }
+        else
+        {
+            return -1;
+        }
+
+    }
+
+    return result;
+}
+
 // https://frankcheng.com/win32/double_string.htm
 void DoubleToCHAR(const double num, char* lpsz, DWORD dwSize)
 {
@@ -590,6 +625,23 @@ void DoubleToWCHAR(const double num, wchar_t* lpsz, DWORD dwSize)
     VariantChangeType(&vTo, &vFrom, 0, VT_BSTR);
     lstrcpynW(lpsz, vTo.bstrVal, dwSize);
     SysFreeString(vTo.bstrVal);
+}
+
+// Custom implementation of rand() using Windows API
+int rand() {
+    // Buffer to store the random number
+    unsigned long randNum = 0;
+
+    // Generate the random number
+    NTSTATUS status = BCryptGenRandom(
+        NULL,                        // Algorithm handle, can be NULL for default RNG
+        (PUCHAR)&randNum, // Buffer to receive the random number
+        sizeof(randNum),        // Size of the buffer
+        BCRYPT_USE_SYSTEM_PREFERRED_RNG // Use the system preferred RNG
+    );
+
+    // Return the random number within the range of RAND_MAX
+    return randNum % RAND_MAX;
 }
 
 

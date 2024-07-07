@@ -1,12 +1,11 @@
 #pragma once
+#ifndef __NOCRT_LIST_HEADER
+#define __NOCRT_LIST_HEADER
 
 /*
 * Helper functions to remove the visual Studio CRT
 * Project : https://github.com/hegusung/netscan-agents
 */
-
-#ifndef __NOCRT_LIST_HEADER
-#define __NOCRT_LIST_HEADER
 
 #include "../lib/NoCRT.h"
 
@@ -232,6 +231,10 @@ public:
 	void push_back(T p_node)
 	{
 		this->insert(p_node);
+	}
+	bool remove(T p_data)
+	{
+		return this->erase(p_data);
 	}
 	int clear(int p_num)
 	{
