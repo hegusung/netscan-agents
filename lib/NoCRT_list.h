@@ -2,12 +2,12 @@
 #ifndef __NOCRT_LIST_HEADER
 #define __NOCRT_LIST_HEADER
 
+#include "../lib/NoCRT.h"
+
 /*
 * Helper functions to remove the visual Studio CRT
 * Project : https://github.com/hegusung/netscan-agents
 */
-
-#include "../lib/NoCRT.h"
 
 // Taken from https://github.com/abulyaev/std-list-implementation/blob/master/src/List.h
 
@@ -34,7 +34,8 @@ public:
 	}
 	
 	~Node()
-	{}
+	{
+	}
 
 };
 
@@ -63,6 +64,15 @@ public:
 	T& operator* ()
 	{
 		if (m_ptr != NULL) return m_ptr->m_node;
+	}
+	Iterator<T>& operator+(size_t i)
+	{
+		while ((this->m_ptr != NULL) && (this->m_ptr->m_next != 0) && i > 0)
+		{
+			m_ptr = m_ptr->m_next;
+			i--;
+		}
+		return *this;
 	}
 	Iterator<T>& operator ++()
 	{
@@ -247,6 +257,24 @@ public:
 		m_count--;
 		return m_count;
 	}
+	void clear()
+	{
+		Node<T>* next;
+		Node<T>* to_del = m_first->m_next;
+		while (to_del != m_last)
+		{
+			next = to_del->m_next;
+			delete to_del;
+			to_del = next;
+		}
+		
+		m_first->m_next = m_last;
+		m_first->m_prev = NULL;
+		m_last->m_next = NULL;
+		m_last->m_prev = m_first;
+		this->m_count = 0;
+	}
+	/*
 	void clear_memory()
 	{
 		Node<T>* buf = m_first;
@@ -259,6 +287,7 @@ public:
 		}
 		m_count = 0;
 	}
+	*/
 	bool empty()
 	{
 		if (begin() == end())
@@ -282,6 +311,11 @@ public:
 			return 1;
 		}
 		return 0;
+	}
+	bool erase(Iterator<T> it)
+	{
+		Node<T>* node = it.getPtr();
+		return this->erase(node->m_node);
 	}
 	bool erase(T p_dataFirst, T p_dataSecond)
 	{
@@ -313,17 +347,27 @@ public:
 	}
 	void pop_front()
 	{
-		Node<T>* buf;
-		buf = m_first->m_next;
-		m_first->m_next = buf->m_next;
-		buf->m_next->m_prev = m_first;
+		if (m_first->m_next != m_last)
+		{
+			Node<T>* buf;
+			buf = m_first->m_next;
+			m_first->m_next = buf->m_next;
+			buf->m_next->m_prev = m_first;
+
+			delete buf;
+		}
 	}
 	void pop_back()
 	{
-		Node<T>* buf;
-		buf = m_last->m_prev;
-		m_last->m_prev = buf->m_prev;
-		buf->m_prev->m_next = m_last;
+		if (m_last->m_prev != m_first)
+		{
+			Node<T>* buf;
+			buf = m_last->m_prev;
+			m_last->m_prev = buf->m_prev;
+			buf->m_prev->m_next = m_last;
+
+			delete buf;
+		}
 	}
 	const bool operator == (const list<T>& p_listSecond)
 	{

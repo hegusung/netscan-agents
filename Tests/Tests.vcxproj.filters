@@ -50,5 +50,8 @@
     <ClInclude Include="..\lib\load_dll.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\lib\NoCRT_wstring.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

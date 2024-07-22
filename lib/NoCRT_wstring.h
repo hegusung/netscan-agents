@@ -6,7 +6,7 @@
 * Helper functions to remove the visual Studio CRT
 * Project : https://github.com/hegusung/netscan-agents
 */
-
+è
 #include "NoCRT.h"
 
 class wstring
@@ -214,7 +214,7 @@ public:
         return str_size;
     }
 
-    int compare(wchar_t* cmp_str) const
+    int compare(const wchar_t* cmp_str) const
     {
         return wcscmp(str, cmp_str);
     }

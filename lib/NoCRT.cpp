@@ -15,9 +15,34 @@ void __chkstk(size_t s) {}
 
 extern "C" int _fltused = 0;
 
+#ifdef _M_IX86 // following functions are needed only for 32-bit architecture
+
+__declspec(naked) void _ftol2()
+{
+    __asm
+    {
+        fistp qword ptr[esp - 8]
+        mov   edx, [esp - 4]
+        mov   eax, [esp - 8]
+        ret
+    }
+}
+
+__declspec(naked) void _ftol2_sse()
+{
+    __asm
+    {
+        fistp dword ptr[esp - 4]
+        mov   eax, [esp - 4]
+        ret
+    }
+}
+
+#endif
+
+
 void initialize_heap() {
     if (heap == NULL) {
-        //heap = HeapCreate(0, 0, 0);  // Default options, initial size, and maximum size
         heap = GetProcessHeap();
     }
 }
@@ -178,6 +203,15 @@ size_t strlen(const char* str) {
 
 char* strcpy(char* dest, const char* src) {
     char* d = dest;
+    while ((*d++ = *src++) != '\0') {
+        // copying each character from src to dest
+    }
+    return dest;
+}
+
+wchar_t* wcscpy(wchar_t* dest, const wchar_t* src)
+{
+    wchar_t* d = dest;
     while ((*d++ = *src++) != '\0') {
         // copying each character from src to dest
     }
@@ -511,67 +545,34 @@ int printf2(const char* format, ...) {
         return NULL;
     }
 
-    // To improve... buffer overflow here
-    char buffer[1024];
-    char* bufptr = buffer;
-    const char* f = format;
     va_list args;
     va_start(args, format);
 
-    while (*f) {
-        if (*f == '%' && *(f + 1) != '\0') {
-            f++;
-            switch (*f) {
-            case 'd': {
-                int value = va_arg(args, int);
-                bufptr += wsprintfA(bufptr, "%d", value);
-                break;
-            }
-            case 'x': {
-                int value = va_arg(args, int);
-                bufptr += wsprintfA(bufptr, "%x", value);
-                break;
-            }
-            case 'C': {
-                unsigned char value = va_arg(args, unsigned char);
-                bufptr += wsprintfA(bufptr, "%02x", value);
-                break;
-            }
-            case 's': {
-                const char* str = va_arg(args, const char*);
-                while (*str) {
-                    *bufptr++ = *str++;
-                }
-                break;
-            }
-            case 'c': {
-                char c = (char)va_arg(args, int);
-                *bufptr++ = c;
-                break;
-            }
-            default: {
-                *bufptr++ = '%';
-                *bufptr++ = *f;
-                break;
-            }
-            }
-        }
-        else {
-            *bufptr++ = *f;
-        }
-        f++;
-    }
-
-    *bufptr = '\0';
+    char buffer[4096];
+    size_t buffer_size = vsnprintf(buffer, 4096, format, args);
 
     DWORD written;
-    WriteConsoleA(hConsole, buffer, (DWORD)(bufptr - buffer), &written, NULL);
+    WriteConsoleA(hConsole, buffer, buffer_size, &written, NULL);
 
-    /*
-    HANDLE write = CreateFileA(TEXT("debug3.txt"), FILE_APPEND_DATA, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    WriteFile(write, buffer, (DWORD)(bufptr - buffer), 0, 0);
-    CloseHandle(write);
-    */
+    va_end(args);
+
+    return NULL;
+}
+
+int wprintf2(const wchar_t* format, ...) {
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hConsole == INVALID_HANDLE_VALUE) {
+        return NULL;
+    }
+
+    va_list args;
+    va_start(args, format);
+
+    wchar_t buffer[4096];
+    size_t buffer_size = vsnprintfW(buffer, 4096, format, args);
+
+    DWORD written;
+    WriteConsoleW(hConsole, buffer, buffer_size, &written, NULL);
 
     va_end(args);
 
@@ -592,6 +593,31 @@ int vsnprintf(char* buffer, size_t count, const char* format, va_list argptr) {
         {
             strcpy(buffer, temp);
             buffer[result] = '\0';
+        }
+        else
+        {
+            return -1;
+        }
+
+    }
+
+    return result;
+}
+
+// Custom vsnprintf implementation using wsprintfA
+int vsnprintfW(wchar_t* buffer, size_t count, const wchar_t* format, va_list argptr) {
+
+    // Allocate a temporary buffer that we will format into
+    wchar_t temp[4096];
+    int result = wvsprintfW(temp, format, argptr);
+
+    // Copy the formatted string to the provided buffer with truncation if necessary
+    if (buffer != NULL)
+    {
+        if (count > result)
+        {
+            wcscpy(buffer, temp);
+            buffer[result] = L'\0';
         }
         else
         {

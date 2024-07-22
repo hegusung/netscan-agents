@@ -1,6 +1,12 @@
 #include "load_dll.h"
 
 #include "../lib/NoCRT.h"
+#include <winternl.h>
+
+/*
+* Custom GetProcAddress / GetModuleHandle
+* Project : https://github.com/hegusung/netscan-agents
+*/
 
 fnLoadLibraryA pLoadLibraryA = NULL;
 
@@ -126,7 +132,6 @@ HMODULE GetModuleHandle_byname(const char* ModuleName) {
 
 FARPROC GetProcAddress_byhash(HMODULE hModule, unsigned int dwApiNameHash) {
 
-	printf2("GetProcAddress_byhash\n");
 	if (hModule == NULL || dwApiNameHash == NULL)
 		return NULL;
 
@@ -157,8 +162,6 @@ FARPROC GetProcAddress_byhash(HMODULE hModule, unsigned int dwApiNameHash) {
 
 		// Hashing every function name pFunctionName
 		// If both hashes are equal then we found the function we want 
-		//unsigned int func_hash = string_hash(pFunctionName, SEED);
-		//printf2("%s: %x: 0x%x\n", pFunctionName, func_hash, pFunctionAddress);
 		if (dwApiNameHash == STRING_HASH(pFunctionName)) {
 
 			// Forwarded exports support
@@ -226,56 +229,74 @@ FARPROC GetProcAddress_byname(HMODULE hModule, const char* apiName) {
 	PDWORD  FunctionAddressArray = (PDWORD)(pBase + pImgExportDir->AddressOfFunctions);
 	PWORD   FunctionOrdinalArray = (PWORD)(pBase + pImgExportDir->AddressOfNameOrdinals);
 
+
+
+	DWORD func_count = -1;
+
 	// Check if it is an ordinal
 	if (((DWORD)apiName & 0xFFFF0000) == 0x00000000)
 	{
+		func_count = (DWORD)apiName - pImgExportDir->Base;
 		// import by ordinal...
 
-		// use the import ordinal (- export ordinal base) as an index into the array of addresses
-		PDWORD uiAddressArray = FunctionAddressArray + ((IMAGE_ORDINAL((DWORD)apiName) - pImgExportDir->Base) * sizeof(DWORD));
+		//PVOID	pFunctionAddress = (PVOID)(pBase + FunctionAddressArray[func_count]);
 
-		// resolve the address for this imported function
-		return (FARPROC)(pBase + DEREF_32(uiAddressArray));
+		//return (FARPROC)pFunctionAddress;
+	}
+	else
+	{
+		for (DWORD i = 0; i < pImgExportDir->NumberOfFunctions; i++) {
+
+			CHAR* pFunctionName = (CHAR*)(pBase + FunctionNameArray[i]);
+
+			if (strcmp(pFunctionName, apiName) == 0) {
+				func_count = FunctionOrdinalArray[i];
+				break;
+			}
+		}
 	}
 
-	for (DWORD i = 0; i < pImgExportDir->NumberOfFunctions; i++) {
+	if (func_count != -1)
+	{
+		PVOID	pFunctionAddress = (PVOID)(pBase + FunctionAddressArray[func_count]);
 
-		CHAR* pFunctionName = (CHAR*)(pBase + FunctionNameArray[i]);
-		PVOID	pFunctionAddress = (PVOID)(pBase + FunctionAddressArray[FunctionOrdinalArray[i]]);
+		// Forwarded exports support
+		if ((FunctionAddressArray[func_count] >= dataDirectory->VirtualAddress) && (FunctionAddressArray[func_count] < dataDirectory->VirtualAddress + dataDirectory->Size))
+		{
+			// Get the name of the forwarder : DLL.FUNCTION
+			char* forwarded_dll = (char*)((ULONG_PTR)pImgDosHdr + FunctionAddressArray[func_count]);
 
-		if (strcmp(pFunctionName, apiName) == 0) {
-
-			// Forwarded exports support
-			if ((FunctionAddressArray[FunctionOrdinalArray[i]] >= dataDirectory->VirtualAddress) && (FunctionAddressArray[FunctionOrdinalArray[i]] < dataDirectory->VirtualAddress + dataDirectory->Size))
-			{
-				// Get the name of the forwarder : DLL.FUNCTION
-				char* forwarded_dll = (char*)((ULONG_PTR)pImgDosHdr + FunctionAddressArray[FunctionOrdinalArray[i]]);
-				// Retrieve the function name with a simple split on '.'
-				char* export_name = forwarded_dll;
-				while (*export_name != '.') {
-					if (*export_name == '\0') {
-						return NULL;
-					}
-					export_name++;
+			// Retrieve the function name with a simple split on '.'
+			char* export_name = forwarded_dll;
+			while (*export_name != '.') {
+				if (*export_name == '\0') {
+					return NULL;
 				}
-				size_t dll_name_length = export_name - forwarded_dll;
 				export_name++;
+			}
+			size_t dll_name_length = export_name - forwarded_dll;
+			export_name++;
 
-				// create the module name
-				CHAR module_name[MAX_PATH];
-				memcpy(module_name, forwarded_dll, dll_name_length);
-				module_name[dll_name_length] = '\0';
-				strcat(module_name, ".dll");
+			// create the module name
+			CHAR module_name[MAX_PATH];
+			memcpy(module_name, forwarded_dll, dll_name_length);
+			module_name[dll_name_length] = '\0';
+			strcat(module_name, ".dll");
 
-				HMODULE mod = LoadLibraryA_byname(module_name);
+			HMODULE mod = LoadLibraryA_byname(module_name);
 
-				memset(module_name, 0, strlen(module_name));
+			memset(module_name, 0, strlen(module_name));
 
-				return GetProcAddress_byname(mod, export_name);
+			if (mod == hModule && strcmp(apiName, export_name) == 0)
+			{
+				// We are about to loop, stop here
+				return (FARPROC)pFunctionAddress;
 			}
 
-			return (FARPROC)pFunctionAddress;
+			return GetProcAddress_byname(mod, export_name);
 		}
+
+		return (FARPROC)pFunctionAddress;
 	}
 
 	return NULL;

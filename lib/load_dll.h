@@ -9,7 +9,6 @@
 #define LOADDLL_HEADER
 
 #include <Windows.h>
-#include <winternl.h>
 
 #include "obfuscation.h"
 
@@ -19,9 +18,6 @@ typedef HMODULE(WINAPI* fnLoadLibraryA)(LPCSTR lpLibFileName);
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-	// MurmurOAAT_32
-	//unsigned int string_hash(const char* str, unsigned int h);
 
 	HMODULE LoadLibraryA_byname(const char* ModuleName);
 	FARPROC GetProcAddress_byhash(HMODULE hModule, unsigned int dwApiNameHash);

@@ -2,8 +2,7 @@
 #define __NOCRT_HEADER
 
 #include <Windows.h>
-
-#pragma comment(lib, "BCrypt.lib")
+#include <intrin.h>
 
 /*
 * Helper functions to remove the visual Studio CRT
@@ -14,6 +13,16 @@ void __chkstk(size_t s);
 
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+// For 32bit arch remember to compile with /arch:IA32 
+
+#ifdef _M_IX86 // following functions are needed only for 32-bit architecture
+
+    void _ftol2();
+
+    void _ftol2_sse();
+
 #endif
 
 /*
@@ -59,6 +68,9 @@ size_t strlen(const char* str);
 #pragma intrinsic(strcpy)
 #pragma function(strcpy)
 char* strcpy(char* dest, const char* src);
+#pragma intrinsic(wcscpy)
+#pragma function(wcscpy)
+wchar_t* wcscpy(wchar_t* dest, const wchar_t* src);
 #pragma intrinsic(strcat)
 #pragma function(strcat)
 char* strcat(char* dest, const char* src);
@@ -91,12 +103,13 @@ long strtol(const char* str, char** endptr, int base);
 void* bsearch(const void* key, const void* base, size_t num, size_t size, int (*cmp)(const void*, const void*));
 void qsort(void* base, size_t num, size_t size, int (*cmp)(const void*, const void*));
 int printf2(const char* format, ...);
+int wprintf2(const wchar_t* format, ...);
 int vsnprintf(char* buffer, size_t count, const char* format, va_list argptr);
+int vsnprintfW(wchar_t* buffer, size_t count, const wchar_t* format, va_list argptr);
 
 void DoubleToCHAR(const double num, char* lpsz, DWORD dwSize);
 void DoubleToWCHAR(const double num, wchar_t* lpsz, DWORD dwSize);
 
-#define RAND_MAX 2147483647
 int rand();
 
 #ifdef __cplusplus

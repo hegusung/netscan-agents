@@ -161,6 +161,7 @@
     <ClInclude Include="..\lib\NoCRT_list.h" />
     <ClInclude Include="..\lib\NoCRT_map.h" />
     <ClInclude Include="..\lib\NoCRT_string.h" />
+    <ClInclude Include="..\lib\NoCRT_wstring.h" />
     <ClInclude Include="..\lib\obfuscation.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
